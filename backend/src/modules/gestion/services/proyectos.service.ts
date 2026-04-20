@@ -28,7 +28,6 @@ export class ProyectosService {
       estado: EstadosProyectosEnum.ACTIVO,
     });
 
-    // Regla de Negocio: Validar estado del cliente si se envía uno
     if (dto.idCliente) {
       const cliente = await this.clienteRepo.findOne({ where: { id: dto.idCliente } });
       if (!cliente) {
@@ -37,7 +36,8 @@ export class ProyectosService {
       if (cliente.estado !== EstadosClientesEnum.ACTIVO) {
         throw new BadRequestException('Solo se pueden asociar clientes en estado ACTIVO a un proyecto.');
       }
-      nuevoProyecto.idCliente = cliente.id;
+      // CORRECCIÓN 1: Pasamos el objeto 'cliente', no el ID
+      nuevoProyecto.cliente = cliente as any; 
     }
 
     const guardado = await this.proyectoRepo.save(nuevoProyecto);
@@ -54,16 +54,17 @@ export class ProyectosService {
     if (dto.estado) proyecto.estado = dto.estado;
 
     if (dto.idCliente !== undefined) {
-      // Si el ID es nulo o 0, asume que quieren desvincular al cliente (proyecto interno)
       if (!dto.idCliente) {
-        proyecto.idCliente = null as any; 
+        // CORRECCIÓN 2: Limpiamos la relación 'cliente', no el idCliente
+        proyecto.cliente = null as any; 
       } else {
         const cliente = await this.clienteRepo.findOne({ where: { id: dto.idCliente } });
         if (!cliente) throw new NotFoundException(`Cliente no encontrado.`);
         if (cliente.estado !== EstadosClientesEnum.ACTIVO) {
           throw new BadRequestException('Solo se pueden asociar clientes en estado ACTIVO a un proyecto.');
         }
-        proyecto.idCliente = cliente.id;
+        // CORRECCIÓN 3: Pasamos el objeto 'cliente'
+        proyecto.cliente = cliente as any;
       }
     }
 
@@ -76,8 +77,8 @@ export class ProyectosService {
 
   async obtenerProyectos(estado?: EstadosProyectosEnum): Promise<ProyectoEntity[]> {
     const query = this.proyectoRepo.createQueryBuilder('proyecto')
-      .leftJoinAndSelect('proyecto.cliente', 'cliente') // Traemos la info del cliente asociado
-      .leftJoinAndSelect('proyecto.tareas', 'tareas');  // Traemos las tareas asociadas
+      .leftJoinAndSelect('proyecto.cliente', 'cliente') 
+      .leftJoinAndSelect('proyecto.tareas', 'tareas');  
 
     if (estado) {
       query.where('proyecto.estado = :estado', { estado });

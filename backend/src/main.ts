@@ -7,10 +7,16 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  app.enableCors({
+    origin: 'http://localhost:4200', 
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    credentials: true,
+  });
+
+  // Seguridad extra que ya tenías
   app.use(helmet());
 
   const globalPrefix = 'api';
-
   app.setGlobalPrefix(globalPrefix);
 
   app.enableVersioning({
